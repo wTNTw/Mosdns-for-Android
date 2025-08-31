@@ -1,0 +1,188 @@
+log:
+  file: /data/adb/modules/mosdns/log/mosdns.log
+  level: info
+data_providers:
+  - tag: geosite
+    file: ./geosite.dat
+    auto_reload: true
+  - tag: geoip
+    file: ./geoip.dat
+    auto_reload: true
+  - tag: dlc
+    file: ./dlc.dat
+    auto_reload: true
+  - tag: hosts
+    file: ./hosts.txt
+    auto_reload: true
+plugins:
+# 缓存
+  - tag: cache
+    type: cache
+    args:
+      size: 1024
+      lazy_cache_ttl: 86400
+      lazy_cache_reply_ttl: 30
+      cache_everything: true
+# hosts
+  - tag: hosts
+    type: hosts
+    args:
+      hosts:
+        - "provider:hosts"
+# qtype65
+  - tag: qtype65
+    type: query_matcher
+    args:
+      qtype: [65]
+# 黑洞路由
+#  - tag: black_hole
+#    type: blackhole
+#    args:
+#      rcode: 3
+#      ipv4: "127.0.0.1"
+#      ipv6: "::1"
+# ttl
+  - tag: ttl_short
+    type: ttl
+    args:
+      minimal_ttl: 60
+      maximum_ttl: 3600
+  - tag: ttl_long
+    type: ttl
+    args:
+      minimal_ttl: 300
+      maximum_ttl: 3600
+# 转发至本地服务器的插件
+  - tag: local_dns
+    type: fast_forward
+    args:
+      upstream:
+        - addr: https://120.53.53.53/dns-query
+        - addr: https://223.5.5.5/dns-query
+        - addr: https://doh.pub/dns-query
+          idle_timeout: 30
+          trusted: true
+          enable_pipeline: true 
+# 转发至远程服务器的插件
+  - tag: remote_dns
+    type: fast_forward
+    args:
+      upstream:
+        - addr: https://dns.google/dns-query
+        - addr: tls://dns.google
+        - addr: https://dns.quad9.net/dns-query
+          dial_addr: 8.8.8.8
+          enable_pipeline: true
+          trusted: true
+          max_conns: 2
+          
+# 匹配本地域名的插件
+  - tag: query_is_cn_domain
+    type: query_matcher
+    args:
+      domain:
+#        - 'provider:geosite:apple-cn'
+        - 'provider:geosite:cn'
+# 匹配非本地域名的插件
+  - tag: query_is_non_cn_domain
+    type: query_matcher
+    args:
+      domain:
+        - 'provider:geosite:geolocation-!cn'
+# 匹配广告域名的插件
+  - tag: query_is_ad_domain
+    type: query_matcher
+    args:
+      domain:
+        - 'provider:geosite:category-ads-all'
+        - 'provider:dlc:category-ads-all'
+# 匹配本地 IP 的插件
+  - tag: response_has_cn_ip
+    type: response_matcher
+    args:
+      ip:
+        - 'provider:geoip:cn'
+  
+  # 匹配dns泄露测试网站域名
+  - tag: "query_is_dnsleak_domain"
+    type: query_matcher
+    args:
+      domain:
+        - "domain:browserleaks.org"
+        - "domain:dnsleaktest.com"
+        - "domain:dnsleak.asn247.net"
+        - "domain:whrq.net"
+        - "domain:ipleak.net"    
+    
+  - tag: "collector"
+    type: "metrics_collector"
+    
+# 没有 args 参数。
+# 主要的运行逻辑插件
+# sequence 插件中调用的插件 tag 必须在 sequence 前定义，
+# 否则 sequence 找不到对应插件。
+  - tag: main_sequence
+    type: sequence
+    args:
+      exec:
+      # 去除ecs
+        - _no_ecs
+      # 优化大杂烩
+        - _misc_optm
+      # 统计数据收集器
+        - collector
+      # 域名映射IP
+        - hosts
+      # 缓存
+        - cache
+      # 填充请求
+        - _pad_query
+        - if: "query_is_dnsleak_domain"
+          exec:
+            - _prefer_ipv4
+            - remote_dns
+            - _return
+      # 屏蔽TYPE65类型请求
+        - if: qtype65
+          exec:
+          - _new_nxdomain_response
+          - _return
+      # 屏蔽广告域名
+        - if: query_is_ad_domain
+          exec:
+          - _new_nxdomain_response
+          - _return
+      #国外解析
+        - if: query_is_non_cn_domain
+          exec:
+          - _prefer_ipv4
+          - remote_dns
+          - _return
+      # 国内解析
+        - if: query_is_cn_domain
+          exec:
+            - local_dns
+            - ttl_short
+            - _return
+      # 已知的污染域名用远程服务器解析
+          else_exec:
+            - _prefer_ipv4
+            - remote_dns
+            - if: "(! response_has_cn_ip)"
+              exec:
+                - ttl_long
+                - _return
+              else_exec:
+                - local_dns
+                - ttl_short
+                - _return
+      # 剩下的未知域名用IP分流，分流原理请参考fallback的工作流程
+servers:
+  - exec: main_sequence
+    listeners:
+      - protocol: udp
+        addr: 127.0.0.1:5335
+      - protocol: tcp
+        addr: 127.0.0.1:5335
+api:
+    http: "127.0.0.1:5336" # 在该地址启动 api 接口。
