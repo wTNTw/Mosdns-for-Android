@@ -1,6 +1,6 @@
 log:
   file: /data/adb/modules/mosdns/log/mosdns.log
-  level: info
+  level: error
 data_providers:
   - tag: geosite
     file: ./geosite.dat

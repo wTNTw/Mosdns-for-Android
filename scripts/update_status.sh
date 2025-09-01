@@ -10,15 +10,12 @@ YIYAN_FILE="$LOG_DIR/latest_yiyan.txt"
 MODULE_PROP="$MODULE_DIR/module.prop"
 LAST_UPDATE_FILE="$LOG_DIR/last_update_time"
 
-# 创建日志目录（如果不存在）
 mkdir -p "$LOG_DIR"
 
-# 日志记录函数
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$1] $2" >> "$LOG_FILE"
 }
 
-# 获取一言内容
 get_yiyan() {
     local yiyan=$("$LOCAL_CURL" -s "$YIYAN_API" | tr -d '\n\r')
     [ -z "$yiyan" ] && [ -f "$YIYAN_FILE" ] && yiyan=$(head -n 1 "$YIYAN_FILE")
@@ -26,7 +23,6 @@ get_yiyan() {
     cat "$YIYAN_FILE"
 }
 
-# 参数处理
 handle_arguments() {
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -37,22 +33,18 @@ handle_arguments() {
     done
 }
 
-# 检查服务状态
 check_service() {
     local pid="N/A"
     local status="STOPPED"
     local retry=0
     local api_available=0
     
-    # 检查PID文件
     if [ -f "$PID_FILE" ]; then
         pid=$(cat "$PID_FILE" 2>/dev/null)
         if [ -n "$pid" ]; then
-            # 方法1：使用BusyBox检查进程是否存在
             if busybox ps -o pid= -p "$pid" >/dev/null 2>&1; then
                 status="RUNNING"
             else
-                # 方法2：通过/proc二次验证（更可靠）
                 if [ -d "/proc/$pid" ] && grep -q "mosdns" "/proc/$pid/cmdline" 2>/dev/null; then
                     status="RUNNING"
                 else
@@ -67,7 +59,6 @@ check_service() {
         fi
     fi
     
-    # 如果未找到运行中的进程，尝试通过API检测
     if [ "$status" != "RUNNING" ]; then
         while [ $retry -lt 2 ]; do
             if "$LOCAL_CURL" -s -o /dev/null --connect-timeout 2 "http://127.0.0.1:5336/metrics"; then
@@ -95,7 +86,6 @@ check_service() {
     echo "$status $pid"
 }
 
-# 更新模块属性
 update_module_prop() {
     local status="$1"
     local pid="${2:-N/A}"

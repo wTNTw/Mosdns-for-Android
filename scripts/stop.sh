@@ -6,6 +6,13 @@ LOG_FILE="$MODDIR/log/mosdns_server.log"
 METRICS_CACHE="$MODDIR/log/metrics_cache"
 UPDATE_SCRIPT="$MODDIR/scripts/update_status.sh"
 PROCESS_NAME="mosdns"
+SETTINGS_FILE="$MODDIR/setting.conf"
+
+if [ -f "$SETTINGS_FILE" ]; then
+    . "$SETTINGS_FILE"
+fi
+
+ENABLE_IPTABLES="${ENABLE_IPTABLES:-true}"
 
 echo "[$(date '+%H:%M:%S')] 停止 MosDNS 服务..." >> "$LOG_FILE"
 
@@ -70,5 +77,14 @@ if [ -x "$UPDATE_SCRIPT" ]; then
 else
     echo "[$(date '+%H:%M:%S')] 警告: update_status.sh 不存在或不可执行" >> "$LOG_FILE"
 fi
+
+if [ "$ENABLE_IPTABLES" = "true" ]; then
+    echo "[$(date '+%H:%M:%S')] iptables DNS转发已启用，将由service.sh统一处理禁用" >> "$LOG_FILE"
+else
+    echo "[$(date '+%H:%M:%S')] iptables DNS转发已禁用（配置设置）" >> "$LOG_FILE"
+fi
+
+# iptables禁用和网络恢复已移至iptables.sh中统一处理
+echo "[$(date '+%H:%M:%S')] MosDNS服务停止完成" >> "$LOG_FILE"
 
 exit 0

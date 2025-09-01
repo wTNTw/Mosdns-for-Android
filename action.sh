@@ -12,11 +12,9 @@ METRICS_URL="http://127.0.0.1:5336/metrics"
 CACHE_FILE="$MODDIR/log/metrics_cache"
 CACHE_TIMEOUT=2
 
-# 设置UTF-8环境
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-# 检查依赖
 check_dependencies() {
     for cmd in curl bc awk stat; do
         command -v $cmd >/dev/null || {
@@ -26,77 +24,35 @@ check_dependencies() {
     done
 }
 
-# 美化菜单框
 draw_box() {
-    # 根据截图精确调整的宽度设置
-    local box_width=80    # 总显示宽度
-    local inner_width=79  # 内容区宽度
-    
-    # 装饰字符
-    local border_h="-"    # 水平线
-    local corner_tl="+"   # 左上角
-    local corner_tr="+"   # 右上角
-    local corner_bl="+"   # 左下角
-    local corner_br="+"   # 右下角
-    local menu_prefix="[ ]" # 菜单项前缀
+    local box_width=80
+    local inner_width=79
+    local border_h="-"
+    local corner_tl="+"
+    local corner_tr="+"
+    local corner_bl="+"
+    local corner_br="+"
+    local menu_prefix="[ ]"
 
-    # 顶部装饰线
     echo ""
     echo "# 执行"
     echo ""
     echo "$corner_tl$(printf "%${inner_width}s" | tr ' ' "$border_h")$corner_tr"
 
-    # 内容行处理
     while IFS= read -r line; do
-        # 清理行内容
         line=$(echo "$line" | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//')
-        
-        # 计算显示宽度（中文算2字符，英文算1字符）
-        display_width=$(echo "$line" | awk '{
-            width = 0
-            len = length($0)
-            for (i=1; i<=len; i++) {
-                c = substr($0,i,1)
-                width += (c ~ /[^\x00-\x7F]/) ? 2 : 1
-            }
-            print width
-        }')
-        
-        # 计算左右填充空格数
-        total_padding=$((inner_width - display_width))
-        left_padding=$((total_padding / 2))
-        right_padding=$((total_padding - left_padding))
-        
-        # 特殊处理菜单项
         if [[ "$line" == *"MosDNS"* ]] || [[ "$line" == *"检查"* ]] || [[ "$line" == *"查看"* ]] || [[ "$line" == *"退出"* ]]; then
             line="$menu_prefix $line"
-            # 重新计算带菜单前缀的宽度
-            display_width=$(echo "$line" | awk '{
-                width = 0
-                len = length($0)
-                for (i=1; i<=len; i++) {
-                    c = substr($0,i,1)
-                    width += (c ~ /[^\x00-\x7F]/) ? 2 : 1
-                }
-                print width
-            }')
-            total_padding=$((inner_width - display_width))
-            left_padding=$((total_padding / 2))
-            right_padding=$((total_padding - left_padding))
         fi
-        
-        # 打印居中内容行
-        printf "%${left_padding}s%s%${right_padding}s\n" "" "$line" ""
+        printf "  %s\n" "$line"
     done <<EOF
 $1
 EOF
 
-    # 底部装饰线
     echo "$corner_bl$(printf "%${inner_width}s" | tr ' ' "$border_h")$corner_br"
     echo ""
 }
 
-# 获取metrics
 get_metrics() {
     if [ -f "$CACHE_FILE" ]; then
         CACHE_TIME=$(stat -c %Y "$CACHE_FILE" 2>/dev/null || date +%s -r "$CACHE_FILE")
@@ -115,17 +71,16 @@ get_metrics() {
     fi
 }
 
-# 状态信息获取
 get_status_info() {
     [ -f "$PID_FILE" ] && STATUS_MSG="状态: 运行中 (PID: $(cat "$PID_FILE"))" || STATUS_MSG="状态: 已停止"
     [ -f "$LAST_UPDATE_FILE" ] && LAST_UPDATE_MSG="更新时间: $(cat "$LAST_UPDATE_FILE")" || LAST_UPDATE_MSG="更新时间: 未知"
+    AUTO_UPDATE_MSG="自动更新: $CRONTAB_STATUS"
 
     METRICS=$(get_metrics)
 
     if [ -n "$METRICS" ]; then
-        # 显示启动时间（替代原来的运行时长）
         START_TIME=$(echo "$METRICS" | awk '/^process_start_time_seconds / {printf "%d", $2}')
-        if [ -n "$START_TIME" ] && [ "$START_TIME" -gt 1600000000 ]; then  # 验证是合理时间戳（>2020年）
+        if [ -n "$START_TIME" ] && [ "$START_TIME" -gt 1600000000 ]; then
             START_STR=$(date -d "@$START_TIME" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || date -r "$START_TIME" "+%Y-%m-%d %H:%M:%S")
             RUNTIME_MSG="启动时间: ${START_STR:-无效时间}"
         else
@@ -133,7 +88,6 @@ get_status_info() {
             echo "[ERROR] 无效启动时间: $START_TIME" >> "$LOG_FILE"
         fi
 
-        # 内存占用计算
         RSS_MEM=$(echo "$METRICS" | awk '/^process_resident_memory_bytes / {print $2}')
         if [ -n "$RSS_MEM" ]; then
             MEM_MB=$(echo "$RSS_MEM" | awk '{printf "%.1f", $1/1024/1024}')
@@ -169,7 +123,6 @@ get_status_info() {
         LATENCY_MSG="快速响应: --%"
     fi
 
-    # 一言处理
     if [ -f "$MODDIR/log/latest_yiyan.txt" ]; then
         YIYAN_CONTENT=$(head -n 1 "$MODDIR/log/latest_yiyan.txt" | tr -d '\r\n')
         TERM_WIDTH=42
@@ -190,10 +143,10 @@ $MEM_MSG
 $QUERY_MSG
 $THREAD_MSG
 $LATENCY_MSG
-$YIYAN_MSG"
+$YIYAN_MSG
+$AUTO_UPDATE_MSG"
 }
 
-# 显示菜单
 show_menu() {
     clear
     get_status_info
@@ -211,7 +164,6 @@ show_menu() {
     echo ""
 }
 
-# 音量键检测
 wait_for_key() {
     chmod +x "$KEYCHECK" 2>/dev/null
     local last_key=0 same_count=0 refresh_count=0 refresh_interval=10
@@ -236,7 +188,6 @@ wait_for_key() {
     done
 }
 
-# 更新操作
 perform_update() {
     draw_box "正在检查更新..."
     if [ -x "$UPDATE_SCRIPT" ]; then
@@ -248,11 +199,29 @@ perform_update() {
     sleep 2
 }
 
-# 初始化
 check_dependencies
+
+# 读取当前 iptables 设置
+SETTINGS_FILE="$MODDIR/setting.conf"
+if [ -f "$SETTINGS_FILE" ]; then
+    # 使用安全的方法读取配置
+    grep -E '^[[:space:]]*[[:alpha:]_][[:alnum:]_]*=' "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp"
+    . "${SETTINGS_FILE}.tmp"
+    rm -f "${SETTINGS_FILE}.tmp"
+fi
+
+ENABLE_IPTABLES="${ENABLE_IPTABLES:-true}"
+IPTABLES_STATUS=$([ "$ENABLE_IPTABLES" = "true" ] && echo "启用" || echo "禁用")
+ENABLE_CRONTAB="${ENABLE_CRONTAB:-true}"
+CRONTAB_STATUS=$([ "$ENABLE_CRONTAB" = "true" ] && echo "启用" || echo "禁用")
+
 echo "
 启动 MosDNS 服务:start.sh
 停止 MosDNS 服务:stop.sh
+启用 iptables DNS 转发:enable_iptables
+禁用 iptables DNS 转发:disable_iptables
+启用自动更新:enable_autoupdate
+禁用自动更新:disable_autoupdate
 检查更新:update_files.sh
 查看日志:log
 退出菜单:exit
@@ -261,7 +230,6 @@ echo "
 TOTAL=$(wc -l < "$TMP_MENU")
 INDEX=1
 
-# 主循环
 while :; do
     show_menu
     wait_for_key
@@ -275,14 +243,74 @@ while :; do
             case "$CMD" in
                 start.sh)
                     sh "$SCRIPTS_DIR/$CMD"
-                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 启动服务" >> "$LOG_FILE"
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单启动服务" >> "$LOG_FILE"
                     draw_box "✓ MosDNS 服务已启动"
                     sleep 1
                     ;;
                 stop.sh)
                     sh "$SCRIPTS_DIR/$CMD"
-                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 停止服务" >> "$LOG_FILE"
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单停止服务" >> "$LOG_FILE"
                     draw_box "✗ MosDNS 服务已停止"
+                    sleep 1
+                    ;;
+                enable_iptables)
+                    # 启用 iptables
+                    if [ -f "$SETTINGS_FILE" ]; then
+                        if grep -q "ENABLE_IPTABLES" "$SETTINGS_FILE"; then
+                            sed -i 's/^ENABLE_IPTABLES=.*/ENABLE_IPTABLES=true/' "$SETTINGS_FILE"
+                        else
+                            echo "ENABLE_IPTABLES=true" >> "$SETTINGS_FILE"
+                        fi
+                        draw_box "✓ iptables DNS 转发已启用"
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单启用 iptables" >> "$LOG_FILE"
+                    else
+                        draw_box "✗ 配置文件不存在"
+                    fi
+                    sleep 1
+                    ;;
+                disable_iptables)
+                    # 禁用 iptables
+                    if [ -f "$SETTINGS_FILE" ]; then
+                        if grep -q "ENABLE_IPTABLES" "$SETTINGS_FILE"; then
+                            sed -i 's/^ENABLE_IPTABLES=.*/ENABLE_IPTABLES=false/' "$SETTINGS_FILE"
+                        else
+                            echo "ENABLE_IPTABLES=false" >> "$SETTINGS_FILE"
+                        fi
+                        draw_box "✗ iptables DNS 转发已禁用"
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单禁用 iptables" >> "$LOG_FILE"
+                    else
+                        draw_box "✗ 配置文件不存在"
+                    fi
+                    sleep 1
+                    ;;
+                enable_autoupdate)
+                    # 启用自动更新
+                    if [ -f "$SETTINGS_FILE" ]; then
+                        if grep -q "ENABLE_CRONTAB" "$SETTINGS_FILE"; then
+                            sed -i 's/^ENABLE_CRONTAB=.*/ENABLE_CRONTAB=true/' "$SETTINGS_FILE"
+                        else
+                            echo "ENABLE_CRONTAB=true" >> "$SETTINGS_FILE"
+                        fi
+                        draw_box "✓ 自动更新已启用"
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单启用自动更新" >> "$LOG_FILE"
+                    else
+                        draw_box "✗ 配置文件不存在"
+                    fi
+                    sleep 1
+                    ;;
+                disable_autoupdate)
+                    # 禁用自动更新
+                    if [ -f "$SETTINGS_FILE" ]; then
+                        if grep -q "ENABLE_CRONTAB" "$SETTINGS_FILE"; then
+                            sed -i 's/^ENABLE_CRONTAB=.*/ENABLE_CRONTAB=false/' "$SETTINGS_FILE"
+                        else
+                            echo "ENABLE_CRONTAB=false" >> "$SETTINGS_FILE"
+                        fi
+                        draw_box "✗ 自动更新已禁用"
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单禁用自动更新" >> "$LOG_FILE"
+                    else
+                        draw_box "✗ 配置文件不存在"
+                    fi
                     sleep 1
                     ;;
                 update_files.sh)
