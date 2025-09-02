@@ -1,10 +1,11 @@
 #!/system/bin/sh
 
 MODULE_DIR="/data/adb/modules/mosdns"
-LOG_DIR="$MODULE_DIR/log"
+DATADIR="/data/adb/Mosdns"
+LOG_DIR="$DATADIR/log"
 LOG_FILE="$LOG_DIR/mosdns_update.log"
-LOCAL_CURL="$MODULE_DIR/update/curl"
-PID_FILE="$MODULE_DIR/mosdns.pid"
+LOCAL_CURL="$DATADIR/update/curl"
+PID_FILE="$DATADIR/mosdns.pid"
 YIYAN_API="https://v1.hitokoto.cn/?encode=text"
 YIYAN_FILE="$LOG_DIR/latest_yiyan.txt"
 MODULE_PROP="$MODULE_DIR/module.prop"

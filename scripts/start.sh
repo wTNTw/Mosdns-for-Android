@@ -1,12 +1,13 @@
 #!/system/bin/sh
 
 MODDIR="/data/adb/modules/mosdns"
-CORE="$MODDIR/bin"
-CONFIG_FILE="$MODDIR/config.yaml"
-LOG_FILE="$MODDIR/log/mosdns_server.log"
-PID_FILE="$MODDIR/mosdns.pid"
-UPDATE_SCRIPT="$MODDIR/scripts/update_files.sh"
-SETTINGS_FILE="$MODDIR/setting.conf"
+DATADIR="/data/adb/Mosdns"
+CORE="$DATADIR/bin"
+CONFIG_FILE="$DATADIR/config.yaml"
+LOG_FILE="$DATADIR/log/mosdns_server.log"
+PID_FILE="$DATADIR/mosdns.pid"
+UPDATE_SCRIPT="$DATADIR/scripts/update_files.sh"
+SETTINGS_FILE="$DATADIR/setting.conf"
 
 if [ -f "$SETTINGS_FILE" ]; then
     # 使用 grep 提取有效的变量赋值行，避免注释和空行导致 source 错误
@@ -61,7 +62,7 @@ else
     echo "[$(date '+%H:%M:%S')] 警告: config.yaml不存在，跳过端口更新" >> "$LOG_FILE"
 fi
 
-mkdir -p "$MODDIR/log"
+mkdir -p "$DATADIR/log"
 touch "$LOG_FILE" 2>/dev/null || {
     echo "[$(date '+%H:%M:%S')] 错误: 无法创建日志文件" >&2
     exit 1
@@ -109,7 +110,7 @@ if [ -n "$PID" ]; then
     ls -ld "$MODDIR" >> "$LOG_FILE"
     touch "$PID_FILE" 2>> "$LOG_FILE"
     
-    TEMP_PID="$MODDIR/temp_pid.$$"
+    TEMP_PID="$DATADIR/temp_pid.$$"
     echo "$PID" > "$TEMP_PID" && mv "$TEMP_PID" "$PID_FILE"
     
     if [ -f "$PID_FILE" ]; then
@@ -126,7 +127,7 @@ if [ -n "$PID" ]; then
         # 应用 iptables 设置
         if [ "$ENABLE_IPTABLES" = "true" ]; then
             echo "[$(date '+%H:%M:%S')] 启用iptables DNS转发..." >> "$LOG_FILE"
-            sh "$MODDIR/scripts/iptables.sh" enable >> "$LOG_FILE" 2>&1
+            sh "$DATADIR/scripts/iptables.sh" enable >> "$LOG_FILE" 2>&1
         else
             echo "[$(date '+%H:%M:%S')] iptables DNS转发已禁用（配置设置）" >> "$LOG_FILE"
         fi
@@ -135,24 +136,16 @@ if [ -n "$PID" ]; then
         if [ "$ENABLE_CRONTAB" = "true" ]; then
             echo "[$(date '+%H:%M:%S')] 调试: 条件为真，启用定时任务" >> "$LOG_FILE"
             echo "[$(date '+%H:%M:%S')] 设置定时任务..." >> "$LOG_FILE"
-            CRON_DIR="$MODDIR/cron"
+            CRON_DIR="$DATADIR/cron"
             mkdir -p "$CRON_DIR"
             
-            # 确定 busybox 路径
+            # 获取 busybox 路径（与 service.sh 保持一致）
             if [ -f "/data/adb/ksud" ]; then
                 BUSYBOX="/data/adb/ksu/bin/busybox"
-            elif [ -f "/data/adb/magisk" ]; then
-                # 使用多种方法获取magisk路径
-                MAGISK_PATH=$(magisk --path 2>/dev/null)
-                if [ -n "$MAGISK_PATH" ]; then
-                    BUSYBOX="$MAGISK_PATH/.magisk/busybox/busybox"
-                else
-                    # 备用方案：使用常见的magisk路径
-                    BUSYBOX="/data/adb/magisk/busybox"
-                fi
+            elif [ -f "/data/adb/ap/bin/busybox" ]; then
+                BUSYBOX="/data/adb/ap/bin/busybox"
             else
-                # 最后尝试使用系统busybox
-                BUSYBOX="busybox"
+                BUSYBOX="$(magisk --path)/.magisk/busybox/busybox"
             fi
             
             # 验证busybox是否存在且可执行
@@ -175,7 +168,7 @@ if [ -n "$PID" ]; then
         fi
         
         # 更新模块状态 - 使用绝对路径确保正确调用
-        UPDATE_STATUS_SCRIPT="$MODDIR/scripts/update_status.sh"
+        UPDATE_STATUS_SCRIPT="$DATADIR/scripts/update_status.sh"
         if [ -f "$UPDATE_STATUS_SCRIPT" ]; then
             echo "[$(date '+%H:%M:%S')] 调用 update_status.sh 更新模块状态..." >> "$LOG_FILE"
             sh "$UPDATE_STATUS_SCRIPT" --status RUNNING --pid "$PID" >> "$LOG_FILE" 2>&1
@@ -191,7 +184,7 @@ if [ -n "$PID" ]; then
     else
         echo "[$(date '+%H:%M:%S')] 错误: 最终未能创建PID文件" >> "$LOG_FILE"
         echo "[$(date '+%H:%M:%S')] 调试: 当前目录权限:" >> "$LOG_FILE"
-        ls -ld "$MODDIR" >> "$LOG_FILE"
+        ls -ld "$DATADIR" >> "$LOG_FILE"
         echo "[$(date '+%H:%M:%S')] 调试: 当前用户: $(whoami)" >> "$LOG_FILE"
         exit 1
     fi

@@ -1,9 +1,10 @@
 #!/system/bin/sh
 
 MODULE_DIR="/data/adb/modules/mosdns"
-FILE_DIR="$MODULE_DIR/bin"
-TEMP_DIR="$MODULE_DIR/update"
-LOG_DIR="$MODULE_DIR/log"
+DATADIR="/data/adb/Mosdns"
+FILE_DIR="$DATADIR/bin"
+TEMP_DIR="$DATADIR/update"
+LOG_DIR="$DATADIR/log"
 LOG_FILE="$LOG_DIR/mosdns_update.log"
 LOCAL_CURL="$TEMP_DIR/curl"
 TEST_URL="https://www.google.com/generate_204"
@@ -156,8 +157,8 @@ main() {
     log "INFO" "=== 文件更新完成 ==="
     date '+%Y-%m-%d %H:%M:%S' > "$LOG_DIR/last_update_time"
     sleep 5
-    if [ -f "$MODULE_DIR/scripts/update_status.sh" ]; then
-        sh "$MODULE_DIR/scripts/update_status.sh"
+    if [ -f "$DATADIR/scripts/update_status.sh" ]; then
+        sh "$DATADIR/scripts/update_status.sh"
         log "INFO" "已调用 update_status.sh 更新 module.prop"
     else
         log "ERROR" "update_status.sh 不存在，无法更新 module.prop"

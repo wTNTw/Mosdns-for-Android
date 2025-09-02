@@ -1,15 +1,16 @@
 #!/system/bin/sh
 
 MODDIR="/data/adb/modules/mosdns"
-SCRIPTS_DIR="$MODDIR/scripts"
-LOG_FILE="$MODDIR/log/mosdns_server.log"
+DATADIR="/data/adb/Mosdns"
+SCRIPTS_DIR="$DATADIR/scripts"
+LOG_FILE="$DATADIR/log/mosdns_server.log"
 TMP_MENU="/dev/key_tmp"
-KEYCHECK="$MODDIR/bin/keycheck"
+KEYCHECK="$DATADIR/bin/keycheck"
 UPDATE_SCRIPT="$SCRIPTS_DIR/update_files.sh"
-LAST_UPDATE_FILE="$MODDIR/log/last_update_time"
-PID_FILE="$MODDIR/mosdns.pid"
+LAST_UPDATE_FILE="$DATADIR/log/last_update_time"
+PID_FILE="$DATADIR/mosdns.pid"
 METRICS_URL="http://127.0.0.1:5336/metrics"
-CACHE_FILE="$MODDIR/log/metrics_cache"
+CACHE_FILE="$DATADIR/log/metrics_cache"
 CACHE_TIMEOUT=2
 
 export LANG=en_US.UTF-8
@@ -123,8 +124,8 @@ get_status_info() {
         LATENCY_MSG="快速响应: --%"
     fi
 
-    if [ -f "$MODDIR/log/latest_yiyan.txt" ]; then
-        YIYAN_CONTENT=$(head -n 1 "$MODDIR/log/latest_yiyan.txt" | tr -d '\r\n')
+    if [ -f "$DATADIR/log/latest_yiyan.txt" ]; then
+        YIYAN_CONTENT=$(head -n 1 "$DATADIR/log/latest_yiyan.txt" | tr -d '\r\n')
         TERM_WIDTH=42
         MAX_LEN=$((TERM_WIDTH - 10))
         if [ ${#YIYAN_CONTENT} -gt $MAX_LEN ]; then
@@ -149,6 +150,8 @@ $AUTO_UPDATE_MSG"
 
 show_menu() {
     clear
+    # 每次显示菜单前重新读取配置，确保状态显示最新
+    read_settings
     get_status_info
     draw_box "$STATUS_DISPLAY"
     echo "  ↑ 确认选择   ↓ 导航菜单"
@@ -201,19 +204,24 @@ perform_update() {
 
 check_dependencies
 
-# 读取当前 iptables 设置
-SETTINGS_FILE="$MODDIR/setting.conf"
-if [ -f "$SETTINGS_FILE" ]; then
-    # 使用安全的方法读取配置
-    grep -E '^[[:space:]]*[[:alpha:]_][[:alnum:]_]*=' "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp"
-    . "${SETTINGS_FILE}.tmp"
-    rm -f "${SETTINGS_FILE}.tmp"
-fi
+# 读取配置文件的函数
+read_settings() {
+    SETTINGS_FILE="$DATADIR/setting.conf"
+    if [ -f "$SETTINGS_FILE" ]; then
+        # 使用安全的方法读取配置
+        grep -E '^[[:space:]]*[[:alpha:]_][[:alnum:]_]*=' "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp"
+        . "${SETTINGS_FILE}.tmp"
+        rm -f "${SETTINGS_FILE}.tmp"
+    fi
 
-ENABLE_IPTABLES="${ENABLE_IPTABLES:-true}"
-IPTABLES_STATUS=$([ "$ENABLE_IPTABLES" = "true" ] && echo "启用" || echo "禁用")
-ENABLE_CRONTAB="${ENABLE_CRONTAB:-true}"
-CRONTAB_STATUS=$([ "$ENABLE_CRONTAB" = "true" ] && echo "启用" || echo "禁用")
+    ENABLE_IPTABLES="${ENABLE_IPTABLES:-true}"
+    IPTABLES_STATUS=$([ "$ENABLE_IPTABLES" = "true" ] && echo "启用" || echo "禁用")
+    ENABLE_CRONTAB="${ENABLE_CRONTAB:-true}"
+    CRONTAB_STATUS=$([ "$ENABLE_CRONTAB" = "true" ] && echo "启用" || echo "禁用")
+}
+
+# 初始读取配置
+read_settings
 
 echo "
 启动 MosDNS 服务:start.sh
@@ -263,6 +271,8 @@ while :; do
                         fi
                         draw_box "✓ iptables DNS 转发已启用"
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单启用 iptables" >> "$LOG_FILE"
+                        # 立即更新状态显示
+                        read_settings
                     else
                         draw_box "✗ 配置文件不存在"
                     fi
@@ -278,6 +288,8 @@ while :; do
                         fi
                         draw_box "✗ iptables DNS 转发已禁用"
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单禁用 iptables" >> "$LOG_FILE"
+                        # 立即更新状态显示
+                        read_settings
                     else
                         draw_box "✗ 配置文件不存在"
                     fi
@@ -293,6 +305,8 @@ while :; do
                         fi
                         draw_box "✓ 自动更新已启用"
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单启用自动更新" >> "$LOG_FILE"
+                        # 立即更新状态显示
+                        read_settings
                     else
                         draw_box "✗ 配置文件不存在"
                     fi
@@ -308,6 +322,8 @@ while :; do
                         fi
                         draw_box "✗ 自动更新已禁用"
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单禁用自动更新" >> "$LOG_FILE"
+                        # 立即更新状态显示
+                        read_settings
                     else
                         draw_box "✗ 配置文件不存在"
                     fi

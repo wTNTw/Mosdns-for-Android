@@ -1,12 +1,13 @@
 #!/system/bin/sh
 
 MODDIR="/data/adb/modules/mosdns"
-PID_FILE="$MODDIR/mosdns.pid"
-LOG_FILE="$MODDIR/log/mosdns_server.log"
-METRICS_CACHE="$MODDIR/log/metrics_cache"
-UPDATE_SCRIPT="$MODDIR/scripts/update_status.sh"
+DATADIR="/data/adb/Mosdns"
+PID_FILE="$DATADIR/mosdns.pid"
+LOG_FILE="$DATADIR/log/mosdns_server.log"
+METRICS_CACHE="$DATADIR/log/metrics_cache"
+UPDATE_SCRIPT="$DATADIR/scripts/update_status.sh"
 PROCESS_NAME="mosdns"
-SETTINGS_FILE="$MODDIR/setting.conf"
+SETTINGS_FILE="$DATADIR/setting.conf"
 
 if [ -f "$SETTINGS_FILE" ]; then
     . "$SETTINGS_FILE"
@@ -69,7 +70,7 @@ fi
 
 if [ -x "$UPDATE_SCRIPT" ]; then
     echo "[$(date '+%H:%M:%S')] 正在更新 module.prop..." >> "$LOG_FILE"
-    if "$UPDATE_SCRIPT" >> "$LOG_FILE" 2>&1; then
+    if "$UPDATE_SCRIPT" --status STOPPED >> "$LOG_FILE" 2>&1; then
         echo "[$(date '+%H:%M:%S')] module.prop 更新成功" >> "$LOG_FILE"
     else
         echo "[$(date '+%H:%M:%S')] 警告: module.prop 更新失败" >> "$LOG_FILE"

@@ -1,7 +1,8 @@
 #!/system/bin/sh
 
 MODDIR="/data/adb/modules/mosdns"
-SETTINGS_FILE="$MODDIR/setting.conf"
+DATADIR="/data/adb/Mosdns"
+SETTINGS_FILE="$DATADIR/setting.conf"
 
 if [ -f "$SETTINGS_FILE" ]; then
     # 使用 grep 提取有效的变量赋值行，避免注释和空行导致 source 错误

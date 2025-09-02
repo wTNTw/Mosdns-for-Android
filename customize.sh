@@ -28,11 +28,13 @@ fi
 
 ui_print "- 最终检测结果: $ROOT_TYPE"
 
-# 检查是否是升级安装（模块目录存在且包含有效文件）
+# 检查是否是升级安装（直接检测已安装的模块路径）
 UPGRADE_INSTALL=false
-if [ -d "$MODPATH" ]; then
-    # 检查是否包含模块相关文件（非空目录）
-    if [ -f "$MODPATH/module.prop" ] || [ -f "$MODPATH/service.sh" ] || [ -f "$MODPATH/setting.conf" ]; then
+INSTALLED_MODULE_PATH="/data/adb/modules/mosdns"
+DATA_DIR="/data/adb/Mosdns"
+if [ -d "$INSTALLED_MODULE_PATH" ]; then
+    # 检查是否包含模块相关文件
+    if [ -f "$INSTALLED_MODULE_PATH/module.prop" ] || [ -f "$INSTALLED_MODULE_PATH/service.sh" ] || [ -f "$INSTALLED_MODULE_PATH/setting.conf" ]; then
         UPGRADE_INSTALL=true
     fi
 fi
@@ -54,28 +56,45 @@ if [ "$UPGRADE_INSTALL" = true ]; then
     done
     case "$key_click" in
     "KEY_VOLUMEUP")
-        ui_print "- 保留原来的配置文件和 bin 文件夹"
+        ui_print "- 保留原来的配置文件和数据文件夹"
         ui_print "- 更新其他所有文件和脚本"
-        # 备份旧的 setting.conf 和 bin 文件夹
-        BACKUP_DIR="$MODPATH/bin/backup"
+        # 备份旧的数据（从 /data/adb/Mosdns 或模块目录）
+        BACKUP_DIR="$DATA_DIR/bin/backup"
         mkdir -p "$BACKUP_DIR"
-        cp -f "$MODPATH/setting.conf" "$BACKUP_DIR/setting.conf.bak" 2>/dev/null
-        cp -rf "$MODPATH/bin" "$BACKUP_DIR/bin.bak" 2>/dev/null
         
-        # 解压所有文件，但排除 setting.conf 和 bin 文件夹
-        unzip -o "$ZIPFILE" -x "setting.conf" "bin/*" -d $MODPATH >/dev/null 2>&1
+        # 只备份配置文件 setting.conf 和 config.yaml
+        if [ -d "$DATA_DIR" ]; then
+            # 如果 DATA_DIR 存在，只备份其中的配置文件
+            cp -f "$DATA_DIR/setting.conf" "$BACKUP_DIR/setting.conf.bak" 2>/dev/null
+            cp -f "$DATA_DIR/config.yaml" "$BACKUP_DIR/config.yaml.bak" 2>/dev/null
+        else
+            # 否则备份模块目录中的配置文件
+            cp -f "$MODPATH/setting.conf" "$BACKUP_DIR/setting.conf.bak" 2>/dev/null
+            cp -f "$MODPATH/config.yaml" "$BACKUP_DIR/config.yaml.bak" 2>/dev/null
+        fi
         
-        # 恢复旧的 setting.conf 和 bin 文件夹
-        cp -f "$BACKUP_DIR/setting.conf.bak" "$MODPATH/setting.conf" 2>/dev/null
-        cp -rf "$BACKUP_DIR/bin.bak" "$MODPATH/bin" 2>/dev/null
+        # 解压所有文件，但排除需要移动的文件夹和文件
+        unzip -o "$ZIPFILE" -x "setting.conf" "config.yaml" -d $MODPATH >/dev/null 2>&1
+        
+        # 恢复旧的配置文件
+        cp -f "$BACKUP_DIR/setting.conf.bak" "$DATA_DIR/setting.conf" 2>/dev/null
+        cp -f "$BACKUP_DIR/config.yaml.bak" "$DATA_DIR/config.yaml" 2>/dev/null
         rm -rf "$BACKUP_DIR"
         ;;
     *)
         ui_print "- 使用新的配置文件"
-        BACKUP_DIR="$MODPATH/bin/backup"
+        # 备份旧的数据到 /data/adb/Mosdns/bin/backup
+        BACKUP_DIR="$DATA_DIR/bin/backup"
         mkdir -p "$BACKUP_DIR"
-        cp -f "$MODPATH/setting.conf" "$BACKUP_DIR/setting.conf.bak" 2>/dev/null
-        cp -f "$MODPATH/config.yaml" "$BACKUP_DIR/config.yaml.bak" 2>/dev/null
+        
+        # 只备份配置文件 setting.conf 和 config.yaml
+        if [ -d "$DATA_DIR" ]; then
+            cp -f "$DATA_DIR/setting.conf" "$BACKUP_DIR/setting.conf.bak" 2>/dev/null
+            cp -f "$DATA_DIR/config.yaml" "$BACKUP_DIR/config.yaml.bak" 2>/dev/null
+        else
+            cp -f "$MODPATH/setting.conf" "$BACKUP_DIR/setting.conf.bak" 2>/dev/null
+            cp -f "$MODPATH/config.yaml" "$BACKUP_DIR/config.yaml.bak" 2>/dev/null
+        fi
         ui_print "- 旧配置已备份到 $BACKUP_DIR"
         
         # 清理旧文件并重新解压所有文件
@@ -87,27 +106,45 @@ else
     ui_print "- 第一次安装，清理并创建目录..."
     # 确保目录完全干净
     rm -rf "$MODPATH"/*
-    mkdir -p "$MODPATH/log" "$MODPATH/cron" "$MODPATH/scripts" "$MODPATH/bin" "$MODPATH/update"
+    mkdir -p "$MODPATH"
     
     # 使用默认配置文件进行全新安装
     ui_print "- 使用默认配置文件进行全新安装"
     unzip -o "$ZIPFILE" -d $MODPATH >/dev/null 2>&1
 fi
 
-ui_print "- 创建模块目录结构..."
-mkdir -p "$MODPATH/log" "$MODPATH/cron" "$MODPATH/scripts" "$MODPATH/bin/backup" "$MODPATH/update"
-touch "$MODPATH/log/mosdns_server.log"
+ui_print "- 创建数据目录结构..."
+mkdir -p "$DATA_DIR"
+mkdir -p "$DATA_DIR/log" "$DATA_DIR/cron" "$DATA_DIR/scripts" "$DATA_DIR/bin/backup" "$DATA_DIR/update"
+
+# 复制文件夹和文件到 DATA_DIR，覆盖现有文件
+cp -rf "$MODPATH/bin" "$DATA_DIR/" 2>/dev/null
+cp -rf "$MODPATH/scripts" "$DATA_DIR/" 2>/dev/null
+cp -rf "$MODPATH/update" "$DATA_DIR/" 2>/dev/null
+cp -rf "$MODPATH/log" "$DATA_DIR/" 2>/dev/null
+cp -rf "$MODPATH/cron" "$DATA_DIR/" 2>/dev/null
+cp -f "$MODPATH/setting.conf" "$DATA_DIR/" 2>/dev/null
+cp -f "$MODPATH/config.yaml" "$DATA_DIR/" 2>/dev/null
+
+# 清理 MODPATH 中的文件，避免残留
+rm -rf "$MODPATH/bin" "$MODPATH/scripts" "$MODPATH/update" "$MODPATH/log" "$MODPATH/cron" "$MODPATH/setting.conf" "$MODPATH/config.yaml" 2>/dev/null
+
+touch "$DATA_DIR/log/mosdns_server.log"
 
 ui_print "- 设置文件权限..."
 
-for dir in log cron; do
-    find "$MODPATH/$dir" -type f -exec chmod 644 {} \; 2>/dev/null
+# 设置 DATA_DIR 权限
+chmod 755 "$DATA_DIR"
+for dir in log cron bin scripts update; do
+    if [ -d "$DATA_DIR/$dir" ]; then
+        find "$DATA_DIR/$dir" -type f -exec chmod 644 {} \; 2>/dev/null
+    fi
 done
 
 ui_print "- 设置可执行文件权限..."
 for file in "$MODPATH/service.sh" "$MODPATH/uninstall.sh" "$MODPATH/action.sh" \
-            "$MODPATH/customize.sh" "$MODPATH/bin/mosdns" "$MODPATH/bin/keycheck" \
-            "$MODPATH/update/curl"; do
+            "$MODPATH/customize.sh" "$DATA_DIR/bin/mosdns" "$DATA_DIR/bin/keycheck" \
+            "$DATA_DIR/update/curl"; do
     if [ -f "$file" ]; then
         chmod 755 "$file" 2>/dev/null
         ui_print "  - 设置可执行: $(basename "$file")"
@@ -116,65 +153,55 @@ done
 
 ui_print "- 设置脚本执行权限..."
 for script in start.sh stop.sh update_status.sh update_files.sh iptables.sh; do
-    if [ -f "$MODPATH/scripts/$script" ]; then
-        chmod 755 "$MODPATH/scripts/$script"
+    if [ -f "$DATA_DIR/scripts/$script" ]; then
+        chmod 755 "$DATA_DIR/scripts/$script"
         ui_print "  - 设置可执行: scripts/$script"
     fi
 done
 
 # 设置配置文件权限
 ui_print "- 设置配置文件权限..."
-for config_file in "$MODPATH/setting.conf" "$MODPATH/config.yaml"; do
+for config_file in "$DATA_DIR/setting.conf" "$DATA_DIR/config.yaml"; do
     if [ -f "$config_file" ]; then
         chmod 644 "$config_file" 2>/dev/null
         ui_print "  - 设置权限: $(basename "$config_file")"
     fi
 done
 
-if [ "$ROOT_TYPE" = "KernelSU" ]; then
-    ui_print "- 配置 KernelSU 启动脚本..."
-    SERVICE_DIR="/data/adb/service.d"
-    mkdir -p "$SERVICE_DIR"
-    
-    cat > "$SERVICE_DIR/mosdns_service.sh" <<EOF
-#!/system/bin/sh
+# 为所有 root 环境创建服务脚本
+ui_print "- 配置启动脚本..."
+SERVICE_DIR="/data/adb/service.d"
+mkdir -p "$SERVICE_DIR"
 
-MODDIR="$MODPATH"
-MODULE_SERVICE="\$MODDIR/service.sh"
-
-if [ -f "\$MODULE_SERVICE" ]; then
-    sh "\$MODULE_SERVICE" "\$@"
-else
-    echo "错误：未找到 MosDNS 模块主服务脚本 (\$MODULE_SERVICE)" >&2
-    exit 1
-fi
-
-exit 0
-EOF
-
+# 移动并重命名 service.sh 到 service.d 目录
+if [ -f "$MODPATH/service.sh" ]; then
+    mv "$MODPATH/service.sh" "$SERVICE_DIR/mosdns_service.sh"
     chmod 755 "$SERVICE_DIR/mosdns_service.sh"
-    ui_print "- 已创建 KernelSU 启动脚本: $SERVICE_DIR/mosdns_service.sh"
+    ui_print "- 已移动服务脚本到: $SERVICE_DIR/mosdns_service.sh"
+else
+    ui_print "! 警告: 未找到 service.sh 文件"
 fi
 
-if [ "$ROOT_TYPE" = "Magisk" ]; then
+# 为不同 root 环境设置特定配置
+if [ "$ROOT_TYPE" = "KernelSU" ]; then
+    ui_print "- 配置 KernelSU 启动环境..."
+    # KernelSU 已经使用 service.d 机制，无需额外配置
+elif [ "$ROOT_TYPE" = "Magisk" ]; then
     ui_print "- 配置 Magisk 启动环境..."
-    chmod 755 "$MODPATH/service.sh"
-fi
-
-if [ "$ROOT_TYPE" = "Apatch" ]; then
+    # Magisk 使用 service.d 机制，无需额外配置
+elif [ "$ROOT_TYPE" = "Apatch" ]; then
     ui_print "- 按照 APM 指南配置 Apatch 模块..."
-    chmod 755 "$MODPATH/service.sh"
     ui_print "- 设置 Apatch 特定文件权限..."
     
-    for script in service.sh uninstall.sh action.sh customize.sh; do
+    for script in uninstall.sh action.sh customize.sh; do
         if [ -f "$MODPATH/$script" ]; then
             chmod 755 "$MODPATH/$script"
             ui_print "  - 设置可执行: $script"
         fi
     done
     
-    if [ -d "$MODPATH/scripts" ]; then
-        for script in "$MODPATH/scripts"/*.sh; do
+    if [ -d "$DATA_DIR/scripts" ]; then
+        for script in "$DATA_DIR/scripts"/*.sh; do
             if [ -f "$script" ]; then
                 chmod 755 "$script"
                 ui_print "  - 设置可执行: scripts/$(basename "$script")"
@@ -182,13 +209,13 @@ if [ "$ROOT_TYPE" = "Apatch" ]; then
         done
     fi
     
-    if [ -f "$MODPATH/bin/mosdns" ]; then
-        chmod 755 "$MODPATH/bin/mosdns"
+    if [ -f "$DATA_DIR/bin/mosdns" ]; then
+        chmod 755 "$DATA_DIR/bin/mosdns"
         ui_print "  - 设置可执行: bin/mosdns"
     fi
     
     ui_print "- Apatch 模块配置完成"
-    ui_print "- 模块将使用标准 service.sh 机制启动"
+    ui_print "- 模块将使用 service.d 机制启动"
 fi
 
 # 安装完成提示
@@ -197,20 +224,21 @@ ui_print "***************************************"
 ui_print "       安装完成!"
 ui_print "***************************************"
 ui_print "- 模块路径: $MODPATH"
-ui_print "- 配置文件: $MODPATH/config.yaml"
-ui_print "- 设置文件: $MODPATH/setting.conf"
-ui_print "- 日志文件: $MODPATH/log/mosdns_server.log"
+ui_print "- 配置文件: $DATA_DIR/config.yaml"
+ui_print "- 设置文件: $DATA_DIR/setting.conf"
+ui_print "- 日志文件: $DATA_DIR/log/mosdns_server.log"
+ui_print "- 数据目录: $DATA_DIR"
 ui_print ""
 ui_print "使用说明:"
-ui_print "1. 编辑 $MODPATH/config.yaml 配置 DNS 规则"
-ui_print "2. 编辑 $MODPATH/setting.conf 自定义模块设置"
+ui_print "1. 编辑 $DATA_DIR/config.yaml 配置 DNS 规则"
+ui_print "2. 编辑 $DATA_DIR/setting.conf 自定义模块设置"
 ui_print "3. 重启设备使配置生效"
 ui_print "4. 使用终端命令或模块界面管理服务"
 ui_print ""
 ui_print "常用命令:"
-ui_print "启动: sh $MODPATH/scripts/start.sh"
-ui_print "停止: sh $MODPATH/scripts/stop.sh"
-ui_print "状态: sh $MODPATH/scripts/iptables.sh status"
+ui_print "启动: sh $DATA_DIR/scripts/start.sh"
+ui_print "停止: sh $DATA_DIR/scripts/stop.sh"
+ui_print "状态: sh $DATA_DIR/scripts/iptables.sh status"
 ui_print "***************************************"
 
 exit 0
