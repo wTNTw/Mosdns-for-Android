@@ -1,0 +1,35 @@
+name: Build and Release mosdns for Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: 'v1.0.0'
+      release_notes:
+        description: 'Release notes'
+        required: false
+        default: 'Auto-generated release'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create ZIP package
+        run: |
+          zip -r mosdns-for-android.zip . -x ".git/*" ".github/*" ".vscode/*"
+          echo "ZIP package created: mosdns-for-android.zip"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: ${{ github.event.inputs.version }}
+          body: ${{ github.event.inputs.release_notes }}
+          files: mosdns-for-android.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
