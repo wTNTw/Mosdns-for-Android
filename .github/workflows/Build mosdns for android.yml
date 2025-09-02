@@ -15,20 +15,28 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt update
+          sudo apt install -y gh
 
       - name: Create ZIP package
         run: |
           zip -r mosdns-for-android.zip . -x ".git/*" ".github/*" ".vscode/*"
           echo "ZIP package created: mosdns-for-android.zip"
 
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ github.event.inputs.version }}
-          name: ${{ github.event.inputs.version }}
-          body: ${{ github.event.inputs.release_notes }}
-          artifacts: mosdns-for-android.zip
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release using GitHub CLI
+        run: |
+          gh release create "${{ github.event.inputs.version }}" mosdns-for-android.zip \
+            --title "${{ github.event.inputs.version }}" \
+            --notes "${{ github.event.inputs.release_notes }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
