@@ -25,11 +25,10 @@ jobs:
           echo "ZIP package created: mosdns-for-android.zip"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ github.event.inputs.version }}
-          release_name: ${{ github.event.inputs.version }}
+          tag: ${{ github.event.inputs.version }}
+          name: ${{ github.event.inputs.version }}
           body: ${{ github.event.inputs.release_notes }}
-          files: mosdns-for-android.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: mosdns-for-android.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
