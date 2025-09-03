@@ -115,7 +115,7 @@ fi
 
 ui_print "- 创建数据目录结构..."
 mkdir -p "$DATA_DIR"
-mkdir -p "$DATA_DIR/log" "$DATA_DIR/cron" "$DATA_DIR/scripts" "$DATA_DIR/bin/backup" "$DATA_DIR/update"
+mkdir -p "$DATA_DIR/log" "$DATA_DIR/cron" "$DATA_DIR/scripts" "$DATA_DIR/bin/backup" "$DATA_DIR/update" "$DATA_DIR/bin/rules"
 
 # 复制文件夹和文件到 DATA_DIR，覆盖现有文件
 cp -rf "$MODPATH/bin" "$DATA_DIR/" 2>/dev/null
@@ -135,7 +135,7 @@ ui_print "- 设置文件权限..."
 
 # 设置 DATA_DIR 权限
 chmod 755 "$DATA_DIR"
-for dir in log cron bin scripts update; do
+for dir in log cron bin scripts update bin/rules; do
     if [ -d "$DATA_DIR/$dir" ]; then
         find "$DATA_DIR/$dir" -type f -exec chmod 644 {} \; 2>/dev/null
     fi
