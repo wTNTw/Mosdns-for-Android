@@ -1,5 +1,6 @@
 full:1.cms.s81c.com
 full:1.www.s81c.com
+full:2-01-5830-0005.cdx.cedexis.net
 full:265.com
 full:2mdn-cn.net
 full:2mdn.net
@@ -8,14 +9,17 @@ full:a2.mzstatic.com
 full:a3.mzstatic.com
 full:a4.mzstatic.com
 full:a5.mzstatic.com
+full:account.cdnetworks.com
 full:account.samsung.com
 full:achievements.xboxlive.com
 full:adcdownload.apple.com
 full:adcdownload.apple.com.akadns.net
 full:adfarm.mediaplex.com
 full:ad.mediaplex.com
+full:adminportal.cdnetworks.com
 full:admob-cn.com
 full:adservice.google.com
+full:afcs.dell.com
 full:ai.ytimg.com
 full:ai.zhaomi.cn
 full:ajax.loli.net
@@ -130,6 +134,7 @@ full:client-api.itunes.apple.com
 full:client-download.steampowered.com
 full:clientflow.apple.com
 full:clientflow.apple.com.akadns.net
+full:clientperipherals.dell.com
 full:clientservices.googleapis.com
 full:clubhub.xboxlive.com
 full:cma.itunes.apple.com
@@ -178,9 +183,12 @@ full:cstat.apple.com
 full:cstat.cdn-apple.com
 full:ctldl.windowsupdate.com
 full:cueme-api.quark.cn
+full:customization-cdn.dell.com
 full:dartsearch-cn.net
 full:dd-cdn.origin-apple.com.akadns.net
+full:dds.dell.com
 full:dejavu.apple.com
+full:deny-netfilter.uds-dev.lenovo.com
 full:devblogs.microsoft.com
 full:developer.microsoft.com
 full:devimages-cdn.apple.com
@@ -193,6 +201,7 @@ full:distribution.qpdp1.net
 full:dlassets-ssl.xboxlive.com
 full:dlassets.xboxlive.com
 full:dlcdnets.asus.com
+full:dl.dell.com
 full:dl.google.com
 full:dl.l.google.com
 full:dns.corp.google.com
@@ -216,11 +225,15 @@ full:download.tensorflow.google.com
 full:download.visualstudio.microsoft.com
 full:download.xboxlive.com
 full:dp.image-gmkt.com
+full:ea2cn-dev-outlet.dell.com
+full:ea2cn-prod-outlet.dell.com
+full:ea2cn-staging-outlet.dell.com
 full:e.admob.com
 full:ec4.images-amazon.com
 full:ec8.images-amazon.com
 full:editorial.xboxlive.com
 full:eds.xboxlive.com
+full:egg.htcsense.com
 full:emdl.ws.microsoft.com
 full:emmapplecodevice.googleapis.com
 full:emoi-cncdn.bing.com
@@ -230,6 +243,7 @@ full:epix.xbox.com
 full:events2.djicdn.com
 full:experiments.apple.com
 full:f.c2r.ts.cdn.office.net
+full:fcs.dell.com
 full:fides-pol.apple.com
 full:firebase-settings.crashlytics.com
 full:fontfiles.googleadapis.com
@@ -240,6 +254,10 @@ full:fonts.gstatic.com
 full:fonts.loli.net
 full:fr-odc.samsungapps.com
 full:fs.microsoft.com
+full:ftaapj.dell.com
+full:fta.dell.com
+full:ftaemea.dell.com
+full:ftasitapj.dell.com
 full:g0.gstatic.com
 full:g1.gstatic.com
 full:g2.gstatic.com
@@ -247,9 +265,13 @@ full:g3doc.corp.google.com
 full:g3.gstatic.com
 full:gameplay.intel.com
 full:gateway.craft.moe
+full:gbxgateway.dell.com
+full:gbxgateway-dev.dell.com
 full:gdssl.image-gmkt.com
 full:g-ec4.images-amazon.com
 full:geetest.datasink.sensorsdata.cn
+full:geo-prism-cn.htcsense.com
+full:geo-prism.htcsense.com
 full:gfwsl.geforce.com
 full:gmskiosk-ssl.corp.google.com
 full:go.corp.google.com
@@ -318,10 +340,13 @@ full:gvt2-cn.com
 full:hdn.xnimg.cn.cdngc.net
 full:hellofontpreview.oss-cn-beijing.aliyuncs.com
 full:hellowebfonts.oss-cn-beijing.aliyuncs.com
+full:home-cn.htcsense.com
+full:home.htcsense.com
 full:hospital.pku.edu.cn
 full:iadsdk.apple.com
 full:icloud.cdn-apple.com
 full:icloud-cdn.icloud.com.akadns.net
+full:i.dell.com
 full:images.apple.com
 full:images.apple.com.akadns.net
 full:images.apple.com.edgekey.net.globalredir.akadns.net
@@ -415,6 +440,7 @@ full:menu-static.gog-statics.com
 full:mesu.apple.com
 full:mesu-cdn.apple.com.akadns.net
 full:mesu-china.apple.com.akadns.net
+full:metrics.deploy.akamai.com
 full:mini5cn-1.opera-mini.net
 full:mini5cn.opera-mini.net
 full:misc-assets.itunes.apple.com
@@ -432,6 +458,7 @@ full:music.apple.com
 full:myapp.itunes.apple.com
 full:myvs.download.prss.microsoft.com
 full:myvsuat.download.prss.microsoft.com
+full:nexus.dell.com
 full:ngportal.cdnetworks.com
 full:np-edge.itunes.apple.com
 full:ntp1.aliyun.com
@@ -481,6 +508,7 @@ full:pancake.apple.com
 full:pancake.cdn-apple.com.akadns.net
 full:partner.globalsign.com
 full:pba0.apple.com
+full:p.cdn.persaas.dell.com
 full:pd.itunes.apple.com
 full:pd-nk.itunes.apple.com
 full:performanceparameters.googleapis.com
@@ -493,6 +521,7 @@ full:play.music.apple.com
 full:plus.djicdn.com
 full:poseidon.dl.playstation.net
 full:prm.dji.com
+full:prm.lenovo.com
 full:probe.siri.apple.com
 full:prod-controlbe.floonet.goog
 full:prod-databe.floonet.goog
@@ -555,6 +584,7 @@ full:scanservice1.qatp1.net
 full:scanservice1.qcpp1.net
 full:scanservice1.qpdp1.net
 full:scc.ssacdn.com
+full:scene7-cdn.dell.com
 full:scp-social.s-msn.com
 full:script.image-gmkt.com
 full:sdx.microsoft.com
@@ -583,8 +613,11 @@ full:silverlight.dlservice.microsoft.com
 full:sina.com.hk
 full:siportal.cdnetworks.com
 full:slupdate.dlservice.microsoft.com
+full:sm.dell.com
 full:smp-device-content.apple.com
 full:s.mzstatic.com
+full:snp.cdn.dell.com
+full:snpi.dell.com
 full:software.download.prss.microsoft.com
 full:speedtest.xboxlive.com
 full:sp.itunes.apple.com
@@ -599,6 +632,8 @@ full:staging-controlbe.floonet.goog
 full:staging-databe.floonet.goog
 full:staging.databe.floonet.goog
 full:staging-regioninfo-pa.googleapis.com
+full:start.htc.com
+full:start.htcsense.com
 full:static-exp1.licdn.com
 full:static.gc.apple.com
 full:static.image-gmkt.com
@@ -629,6 +664,7 @@ full:sup.corp.google.com
 full:sup.l.google.com
 full:support.1ucrs.com
 full:support.apple.com
+full:supportassist.dell.com
 full:supportcenter.corp.google.com
 full:support-china.apple-support.akadns.net
 full:sup-ssh-relay2.corp.google.com
@@ -653,6 +689,7 @@ full:tesla-cdn.thron.cn
 full:test.bugs-qa.chromium.org
 full:test.gbugs-qa.chromium.org
 full:tf-feedback.itunes.apple.com
+full:thinkcloud.lenovo.com
 full:tiles.xbox.com
 full:time.amazonaws.cn
 full:time.izatcloud.net
@@ -691,10 +728,12 @@ full:upp.itunes.apple.com
 full:userstats.xboxlive.com
 full:valid.apple.com
 full:valid.origin-apple.com.akadns.net
+full:verdaccio.cnno1.uds-qa.lenovo.com
 full:vext.corp.google.com
 full:visualstudio.download.prss.microsoft.com
 full:vscode.download.prss.microsoft.com
 full:vz.download.prss.microsoft.com
+full:waf.cdnetworks.com
 full:wear.googleapis.com
 full:weather-data.apple.com
 full:weather-data.apple.com.akadns.net
@@ -705,6 +744,7 @@ full:web-service.halo.xbox.com
 full:web-service-ssl.halo.xbox.com
 full:webview.unityads.unity3d.com
 full:wl.dlservice.microsoft.com
+full:wmota.htcsense.com
 full:wscont1.apps.microsoft.com
 full:wscont2.apps.microsoft.com
 full:www-05.ibm.com
@@ -717,6 +757,8 @@ full:www-api.ibm.com
 full:www.apple.com
 full:www.apple.com.edgekey.net
 full:www.apple.com.edgekey.net.globalredir.akadns.net
+full:www-csb.dell.com
+full:www.dell.com
 full:www.destinationurl.com
 full:www.entrust.cn
 full:www.ericsson.com
@@ -724,6 +766,7 @@ full:www.googleadapis.com
 full:www-google-analytics.l.google.com
 full:www-googletagmanager.l.google.com
 full:www.gstatic.com
+full:www.htcsense.com
 full:www.htcvive.com
 full:www.ibm.com
 full:www.ikea.com

@@ -9,13 +9,18 @@ LOG_FILE="$LOG_DIR/mosdns_update.log"
 LOCAL_CURL="$TEMP_DIR/curl"
 TEST_URL="https://www.google.com/generate_204"
 
-FILES="https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat \
-       https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat \
-       https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat \
-       https://raw.hellogithub.com/hosts"
+FILES="https://raw.githubusercontent.com/pmkol/easymosdns/rules/china_ip_list.txt \
+       https://raw.githubusercontent.com/pmkol/easymosdns/rules/gfw_ip_list.txt \
+       https://raw.githubusercontent.com/pmkol/easymosdns/rules/china_domain_list.txt \
+       https://raw.githubusercontent.com/pmkol/easymosdns/rules/gfw_domain_list.txt \
+       https://raw.githubusercontent.com/pmkol/easymosdns/rules/cdn_domain_list.txt \
+       https://raw.githubusercontent.com/pmkol/easymosdns/rules/ad_domain_list.txt \
+       https://raw.githubusercontent.com/pmkol/easymosdns/main/ecs_cn_domain.txt \
+       https://raw.githubusercontent.com/pmkol/easymosdns/main/ecs_noncn_domain.txt \
+       https://raw.githubusercontent.com/pmkol/easymosdns/main/hosts.txt"
 
 
-mkdir -p "$TEMP_DIR" "$LOG_DIR" "$FILE_DIR" "$FILE_DIR/backup"
+mkdir -p "$TEMP_DIR" "$LOG_DIR" "$FILE_DIR" "$DATADIR/backup" "$FILE_DIR/rules"
 
 log() {
     local level="${1:-INFO}"
@@ -45,13 +50,16 @@ check_network() {
 
 backup_file() {
     local file_path="$1"
-    local backup_dir="$(dirname "$file_path")/backup"
     local filename="$(basename "$file_path")"
+    # 获取相对于 FILE_DIR 的相对路径
+    local relative_path="${file_path#$FILE_DIR/}"
+    local backup_dir="$DATADIR/backup/$(dirname "$relative_path")"
+    local backup_file="$DATADIR/backup/$relative_path"
     
     mkdir -p "$backup_dir"
     if [ -f "$file_path" ]; then
-        cp "$file_path" "$backup_dir/$filename"
-        log "DEBUG" "已备份: $file_path → $backup_dir/$filename"
+        cp "$file_path" "$backup_file"
+        log "DEBUG" "已备份: $file_path → $backup_file"
         return 0
     fi
     log "WARN" "无原始文件可备份: $file_path"
@@ -104,7 +112,7 @@ process_hosts() {
 update_file() {
     local url="$1"
     local filename=$(basename "$url")
-    local target_file="$FILE_DIR/$filename"
+    local target_file="$FILE_DIR/rules/$filename"
     local temp_file="$TEMP_DIR/$filename.tmp"
 
     if [ "$filename" = "hosts" ]; then
@@ -126,7 +134,7 @@ update_file() {
     backup_file "$target_file"
     log "INFO" "开始更新: $filename"
     if download_with_retry "$url" "$temp_file" && \
-       [ -s "$temp_file" ] && [ $(stat -c%s "$temp_file") -gt 10240 ]; then
+       [ -s "$temp_file" ] && [ $(stat -c%s "$temp_file") -gt 1024 ]; then
         mv -f "$temp_file" "$target_file"
         chmod 644 "$target_file"
         log "INFO" "更新成功: $filename (大小: $(du -h "$target_file" | cut -f1))"
@@ -138,6 +146,52 @@ update_file() {
 }
 
 
+update_mosdns_core() {
+    local mosdns_url="https://github.com/pmkol/mosdns-x/releases/latest/download/mosdns-linux-arm64.zip"
+    local temp_zip="$TEMP_DIR/mosdns-linux-arm64.zip"
+    local temp_extract="$TEMP_DIR/mosdns_extract"
+    
+    log "INFO" "开始更新 mosdns 核心"
+    
+    # 下载 mosdns zip 文件
+    if ! download_with_retry "$mosdns_url" "$temp_zip"; then
+        log "ERROR" "下载 mosdns 核心失败"
+        return 1
+    fi
+    
+    # 创建解压目录
+    mkdir -p "$temp_extract"
+    
+    # 解压 zip 文件
+    if ! unzip -o "$temp_zip" -d "$temp_extract" >/dev/null 2>&1; then
+        log "ERROR" "解压 mosdns 核心失败"
+        rm -rf "$temp_extract" "$temp_zip"
+        return 1
+    fi
+    
+    # 查找解压后的 mosdns 可执行文件
+    local mosdns_bin=$(find "$temp_extract" -name "mosdns" -type f -executable | head -n 1)
+    if [ -z "$mosdns_bin" ]; then
+        log "ERROR" "在 zip 文件中未找到 mosdns 可执行文件"
+        rm -rf "$temp_extract" "$temp_zip"
+        return 1
+    fi
+    
+    # 备份原有 mosdns
+    backup_file "$FILE_DIR/mosdns"
+    
+    # 复制新的 mosdns
+    if cp -f "$mosdns_bin" "$FILE_DIR/mosdns" && chmod 755 "$FILE_DIR/mosdns"; then
+        log "INFO" "mosdns 核心更新成功"
+        rm -rf "$temp_extract" "$temp_zip"
+        return 0
+    else
+        log "ERROR" "复制 mosdns 可执行文件失败"
+        rm -rf "$temp_extract" "$temp_zip"
+        return 1
+    fi
+}
+
 main() {
     check_curl || return 1
     
@@ -148,11 +202,13 @@ main() {
     
     log "INFO" "=== 开始文件更新 ==="
     
-    log "INFO" "--- 更新数据文件 ---"
+    log "INFO" "--- 更新规则文件 ---"
     for url in $FILES; do
         update_file "$url" || log "ERROR" "文件更新失败: $url"
     done
     
+    log "INFO" "--- 更新 mosdns 核心 ---"
+    update_mosdns_core || log "ERROR" "mosdns 核心更新失败"
     
     log "INFO" "=== 文件更新完成 ==="
     date '+%Y-%m-%d %H:%M:%S' > "$LOG_DIR/last_update_time"

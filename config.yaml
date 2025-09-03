@@ -24,13 +24,13 @@ data_providers:
     file: ./rules/ad_domain_list.txt
     auto_reload: true
   - tag: ecscn
-    file: ./ecs_cn_domain.txt
+    file: ./rules/ecs_cn_domain.txt
     auto_reload: true
   - tag: ecsnoncn
-    file: ./ecs_noncn_domain.txt
+    file: ./rules/ecs_noncn_domain.txt
     auto_reload: true
   - tag: hosts
-    file: ./hosts.txt
+    file: ./rules/hosts.txt
     auto_reload: true
 
 plugins:
