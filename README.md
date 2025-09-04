@@ -1,7 +1,7 @@
 # Mosdns-for-Android
 模块默认配置文件为setting.conf，mosdns服务配置文件为config.yaml
 
-适用于安卓系统的 Mosdns v4 模块,暂未适配 Mosdns V5
+适用于安卓系统的 Mosdns-x 模块, 配置文件使用easymosdns, 详见: (https://github.com/pmkol/easymosdns)
 
 功能概述、配置方式、教程等，详见: [wiki](https://irine-sistiana.gitbook.io/mosdns-wiki/)
 
