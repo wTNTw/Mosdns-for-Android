@@ -29,7 +29,6 @@ if [ -f "$settings_file" ]; then
     MOSDNS_PORT=$(echo "$MOSDNS_PORT" | tr -d '[:space:]')
     ENABLE_IPTABLES=$(echo "$ENABLE_IPTABLES" | tr -d '[:space:]')
     ENABLE_CRONTAB=$(echo "$ENABLE_CRONTAB" | tr -d '[:space:]')
-    CRON_SCHEDULE=$(echo "$CRON_SCHEDULE" | tr -d '[:space:]')
 fi
 
 # 设置默认值
