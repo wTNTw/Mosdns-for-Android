@@ -119,7 +119,7 @@ update_file() {
         
         log "INFO" "开始更新hosts.txt"
         if download_with_retry "$url" "$temp_file" && \
-           [ -s "$temp_file" ] && [ $(stat -c%s "$temp_file") -gt 1024 ]; then
+           [ -s "$temp_file" ] && [ $(stat -c%s "$temp_file") -gt 0 ]; then
             if process_hosts "$temp_file"; then
                 rm -f "$temp_file"
                 return 0
@@ -133,7 +133,7 @@ update_file() {
     backup_file "$target_file"
     log "INFO" "开始更新: $filename"
     if download_with_retry "$url" "$temp_file" && \
-       [ -s "$temp_file" ] && [ $(stat -c%s "$temp_file") -gt 1024 ]; then
+       [ -s "$temp_file" ] && [ $(stat -c%s "$temp_file") -gt 0 ]; then
         mv -f "$temp_file" "$target_file"
         chmod 644 "$target_file"
         log "INFO" "更新成功: $filename (大小: $(du -h "$target_file" | cut -f1))"
