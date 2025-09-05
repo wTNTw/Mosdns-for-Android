@@ -25,7 +25,6 @@ CRON_SCHEDULE="${CRON_SCHEDULE:-0 8,21 * * *}"
 MOSDNS_PORT=$(echo "$MOSDNS_PORT" | tr -d '[:space:]')
 ENABLE_IPTABLES=$(echo "$ENABLE_IPTABLES" | tr -d '[:space:]')
 ENABLE_CRONTAB=$(echo "$ENABLE_CRONTAB" | tr -d '[:space:]')
-CRON_SCHEDULE=$(echo "$CRON_SCHEDULE" | tr -d '[:space:]')
 
 update_config_port() {
     local port="$1"
@@ -156,7 +155,7 @@ if [ -n "$PID" ]; then
             
             # 创建定时任务
             echo "$CRON_SCHEDULE $BUSYBOX sh $UPDATE_SCRIPT --silent >> $LOG_FILE 2>&1" > "$CRON_DIR/root"
-            echo "0 */12 * * * $BUSYBOX ps | grep '[c]rond' >/dev/null && echo \"[crond检查] crond 正在运行 [\$(date '+\%Y-\%m-\%d \%H:\%M:\%S')]\" >> $LOG_FILE || echo \"[crond检查] crond 未运行，需检查！ [\$(date '+\%Y-\%m-\%d \%H:\%M:\%S')]\" >> $LOG_FILE" >> "$CRON_DIR/root"
+            echo "0 */6 * * * $BUSYBOX ps | grep '[c]rond' >/dev/null && echo \"[crond检查] crond 正在运行 [\$(date '+\%Y-\%m-\%d \%H:\%M:\%S')]\" >> $LOG_FILE || echo \"[crond检查] crond 未运行，需检查！ [\$(date '+\%Y-\%m-\%d \%H:\%M:\%S')]\" >> $LOG_FILE" >> "$CRON_DIR/root"
             chmod 644 "$CRON_DIR/root"
             
             # 启动定时任务服务

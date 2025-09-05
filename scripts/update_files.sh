@@ -16,8 +16,7 @@ FILES="https://raw.githubusercontent.com/pmkol/easymosdns/rules/china_ip_list.tx
        https://raw.githubusercontent.com/pmkol/easymosdns/rules/cdn_domain_list.txt \
        https://raw.githubusercontent.com/pmkol/easymosdns/rules/ad_domain_list.txt \
        https://raw.githubusercontent.com/pmkol/easymosdns/main/ecs_cn_domain.txt \
-       https://raw.githubusercontent.com/pmkol/easymosdns/main/ecs_noncn_domain.txt \
-       https://raw.githubusercontent.com/pmkol/easymosdns/main/hosts.txt"
+       https://raw.githubusercontent.com/pmkol/easymosdns/main/ecs_noncn_domain.txt"
 
 
 mkdir -p "$TEMP_DIR" "$LOG_DIR" "$FILE_DIR" "$DATADIR/backup" "$FILE_DIR/rules"
