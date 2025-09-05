@@ -22,14 +22,13 @@ settings_file="$data_dir/setting.conf"
 if [ -f "$settings_file" ]; then
     # 安全地读取配置
     grep -E '^[[:space:]]*[[:alpha:]_][[:alnum:]_]*=' "$settings_file" > "${settings_file}.tmp"
-    . "${settings_file}.tmp"
+    。 "${settings_file}.tmp"
     rm -f "${settings_file}.tmp"
     
     # 清理配置值
     MOSDNS_PORT=$(echo "$MOSDNS_PORT" | tr -d '[:space:]')
     ENABLE_IPTABLES=$(echo "$ENABLE_IPTABLES" | tr -d '[:space:]')
     ENABLE_CRONTAB=$(echo "$ENABLE_CRONTAB" | tr -d '[:space:]')
-    CRON_SCHEDULE=$(echo "$CRON_SCHEDULE" | tr -d '[:space:]')
 fi
 
 # 设置默认值
