@@ -1,6 +1,9 @@
 #!/system/bin/sh
 
+# 检测 Magisk 版本确定模块目录
 MODDIR="/data/adb/modules/mosdns"
+[ -n "$(magisk -v 2>/dev/null | grep lite)" ] && MODDIR="/data/adb/lite_modules/mosdns"
+
 DATADIR="/data/adb/Mosdns"
 CORE="$DATADIR/bin"
 CONFIG_FILE="$DATADIR/config.yaml"
@@ -8,23 +11,50 @@ LOG_FILE="$DATADIR/log/mosdns_server.log"
 PID_FILE="$DATADIR/mosdns.pid"
 UPDATE_SCRIPT="$DATADIR/scripts/update_files.sh"
 SETTINGS_FILE="$DATADIR/setting.conf"
+SCRIPTS_DIR="$DATADIR/scripts"
 
+# 创建必要目录
+mkdir -p "$DATADIR/log" "$DATADIR/cron"
+
+# 检查模块是否被禁用
+if [ -f "$MODDIR/disable" ]; then
+    echo "[$(date '+%H:%M:%S')] 模块已被禁用，跳过启动" >> "$LOG_FILE"
+    # 更新模块状态为已停止
+    if [ -f "$SCRIPTS_DIR/update_status.sh" ]; then
+        sh "$SCRIPTS_DIR/update_status.sh" --status STOPPED >> "$LOG_FILE" 2>&1
+    fi
+    exit 0
+fi
+
+# 导入并清理配置
 if [ -f "$SETTINGS_FILE" ]; then
-    # 使用 grep 提取有效的变量赋值行，避免注释和空行导致 source 错误
     grep -E '^[[:space:]]*[[:alpha:]_][[:alnum:]_]*=' "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp"
     . "${SETTINGS_FILE}.tmp"
     rm -f "${SETTINGS_FILE}.tmp"
+    
+    MOSDNS_PORT=$(echo "$MOSDNS_PORT" | tr -d '[:space:]')
+    ENABLE_IPTABLES=$(echo "$ENABLE_IPTABLES" | tr -d '[:space:]')
+    ENABLE_CRONTAB=$(echo "$ENABLE_CRONTAB" | tr -d '[:space:]')
 fi
 
+# 默认配置值
 MOSDNS_PORT="${MOSDNS_PORT:-5335}"
 ENABLE_IPTABLES="${ENABLE_IPTABLES:-true}"
-ENABLE_CRONTAB="${ENABLE_CRONTAB:-true}"
+ENABLE_CRONTAB="${ENABLE_CRONTAB:-false}"
 CRON_SCHEDULE="${CRON_SCHEDULE:-0 8,21 * * *}"
 
-# 去除变量值中的换行符和空格
-MOSDNS_PORT=$(echo "$MOSDNS_PORT" | tr -d '[:space:]')
-ENABLE_IPTABLES=$(echo "$ENABLE_IPTABLES" | tr -d '[:space:]')
-ENABLE_CRONTAB=$(echo "$ENABLE_CRONTAB" | tr -d '[:space:]')
+# 获取 busybox 路径
+get_busybox_path() {
+    if [ -f "/data/adb/ksud" ]; then
+        echo "/data/adb/ksu/bin/busybox"
+    elif [ -f "/data/adb/ap/bin/busybox" ]; then
+        echo "/data/adb/ap/bin/busybox"
+    else
+        echo "$(magisk --path)/.magisk/busybox/busybox"
+    fi
+}
+
+BUSYBOX=$(get_busybox_path)
 
 update_config_port() {
     local port="$1"
@@ -116,63 +146,45 @@ if [ -n "$PID" ]; then
         chmod 644 "$PID_FILE"
         echo "[$(date '+%H:%M:%S')] 成功写入PID文件 (PID: $PID)" >> "$LOG_FILE"
         
-        # 应用 iptables 和定时任务配置
         echo "[$(date '+%H:%M:%S')] 应用配置设置..." >> "$LOG_FILE"
         echo "[$(date '+%H:%M:%S')] ENABLE_IPTABLES=$ENABLE_IPTABLES, ENABLE_CRONTAB=$ENABLE_CRONTAB" >> "$LOG_FILE"
-        
-        # 调试：检查 ENABLE_CRONTAB 的实际值
-        echo "[$(date '+%H:%M:%S')] 调试: ENABLE_CRONTAB 的值为: '$ENABLE_CRONTAB'" >> "$LOG_FILE"
         
         # 应用 iptables 设置
         if [ "$ENABLE_IPTABLES" = "true" ]; then
             echo "[$(date '+%H:%M:%S')] 启用iptables DNS转发..." >> "$LOG_FILE"
             sh "$DATADIR/scripts/iptables.sh" enable >> "$LOG_FILE" 2>&1
         else
-            echo "[$(date '+%H:%M:%S')] iptables DNS转发已禁用（配置设置）" >> "$LOG_FILE"
+            echo "[$(date '+%H:%M:%S')] iptables DNS转发已禁用" >> "$LOG_FILE"
         fi
         
         # 应用定时任务设置
         if [ "$ENABLE_CRONTAB" = "true" ]; then
-            echo "[$(date '+%H:%M:%S')] 调试: 条件为真，启用定时任务" >> "$LOG_FILE"
             echo "[$(date '+%H:%M:%S')] 设置定时任务..." >> "$LOG_FILE"
             CRON_DIR="$DATADIR/cron"
             mkdir -p "$CRON_DIR"
             
-            # 获取 busybox 路径（与 service.sh 保持一致）
-            if [ -f "/data/adb/ksud" ]; then
-                BUSYBOX="/data/adb/ksu/bin/busybox"
-            elif [ -f "/data/adb/ap/bin/busybox" ]; then
-                BUSYBOX="/data/adb/ap/bin/busybox"
-            else
-                BUSYBOX="$(magisk --path)/.magisk/busybox/busybox"
-            fi
-            
-            # 验证busybox是否存在且可执行
             if [ ! -x "$BUSYBOX" ]; then
-                echo "[$(date '+%H:%M:%S')] 警告: BusyBox不可用 ($BUSYBOX)，跳过定时任务" >> "$LOG_FILE"
+                echo "[$(date '+%H:%M:%S')] 警告: BusyBox不可用，跳过定时任务" >> "$LOG_FILE"
                 continue
             fi
             
-            # 创建定时任务
             echo "$CRON_SCHEDULE $BUSYBOX sh $UPDATE_SCRIPT --silent >> $LOG_FILE 2>&1" > "$CRON_DIR/root"
             echo "0 */6 * * * $BUSYBOX ps | grep '[c]rond' >/dev/null && echo \"[crond检查] crond 正在运行 [\$(date '+\%Y-\%m-\%d \%H:\%M:\%S')]\" >> $LOG_FILE || echo \"[crond检查] crond 未运行，需检查！ [\$(date '+\%Y-\%m-\%d \%H:\%M:\%S')]\" >> $LOG_FILE" >> "$CRON_DIR/root"
             chmod 644 "$CRON_DIR/root"
             
-            # 启动定时任务服务
             $BUSYBOX crond -c "$CRON_DIR/"
             echo "[$(date '+%H:%M:%S')] 定时更新服务已启动" >> "$LOG_FILE"
         else
-            echo "[$(date '+%H:%M:%S')] 调试: 条件为假，禁用定时任务" >> "$LOG_FILE"
-            echo "[$(date '+%H:%M:%S')] 定时更新服务已禁用（配置设置）" >> "$LOG_FILE"
+            echo "[$(date '+%H:%M:%S')] 定时更新服务已禁用" >> "$LOG_FILE"
         fi
         
-        # 更新模块状态 - 使用绝对路径确保正确调用
+        # 更新模块状态
         UPDATE_STATUS_SCRIPT="$DATADIR/scripts/update_status.sh"
         if [ -f "$UPDATE_STATUS_SCRIPT" ]; then
-            echo "[$(date '+%H:%M:%S')] 调用 update_status.sh 更新模块状态..." >> "$LOG_FILE"
+            echo "[$(date '+%H:%M:%S')] 更新模块状态..." >> "$LOG_FILE"
             sh "$UPDATE_STATUS_SCRIPT" --status RUNNING --pid "$PID" >> "$LOG_FILE" 2>&1
             if [ $? -eq 0 ]; then
-                echo "[$(date '+%H:%M:%S')] 已成功更新 module.prop 状态" >> "$LOG_FILE"
+                echo "[$(date '+%H:%M:%S')] 已更新 module.prop 状态" >> "$LOG_FILE"
             else
                 echo "[$(date '+%H:%M:%S')] 警告: 更新 module.prop 状态失败" >> "$LOG_FILE"
             fi
@@ -191,3 +203,75 @@ else
     echo "[$(date '+%H:%M:%S')] 启动失败: 无法获取PID" >> "$LOG_FILE"
     exit 1
 fi
+
+stop_service() {
+    echo "[$(date '+%H:%M:%S')] 停止 MosDNS 服务..." >> "$LOG_FILE"
+    # 停止 mosdns 进程
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if [ -n "$PID" ]; then
+            kill "$PID" 2>/dev/null
+            sleep 1
+            kill -9 "$PID" 2>/dev/null
+        fi
+        rm -f "$PID_FILE"
+    fi
+
+    # 停止定时任务
+    if [ -f "/data/adb/ksud" ]; then
+        busybox="/data/adb/ksu/bin/busybox"
+    elif [ -f "/data/adb/ap/bin/busybox" ]; then
+        busybox="/data/adb/ap/bin/busybox"
+    else
+        busybox="$(magisk --path)/.magisk/busybox/busybox"
+    fi
+    $busybox pkill -f "crond -c $DATADIR/cron/"
+
+    # 更新模块状态
+    if [ -f "$SCRIPTS_DIR/update_status.sh" ]; then
+        sh "$SCRIPTS_DIR/update_status.sh" --status STOPPED >> "$LOG_FILE" 2>&1
+    fi
+    echo "[$(date '+%H:%M:%S')] MosDNS 服务已停止" >> "$LOG_FILE"
+}
+
+monitor_disable() {
+    (
+        sleep 10
+        while true; do
+            if [ -f "$MODDIR/disable" ]; then
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 检测到模块被禁用，停止服务..." >> "$LOG_FILE"
+                stop_service
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 服务已停止，监控进程退出" >> "$LOG_FILE"
+                exit 0
+            fi
+            sleep 5
+        done
+    ) &
+}
+
+case "$1" in
+    start|"")
+        monitor_disable
+        ;;
+    stop)
+        stop_service
+        ;;
+    restart)
+        stop_service
+        sleep 2
+        monitor_disable
+        ;;
+    status)
+        if is_process_running; then
+            echo "MosDNS 服务正在运行 (PID: $(cat "$PID_FILE" 2>/dev/null))"
+            exit 0
+        else
+            echo "MosDNS 服务未运行"
+            exit 1
+        fi
+        ;;
+    *)
+        echo "用法: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac

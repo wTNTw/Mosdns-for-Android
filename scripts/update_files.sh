@@ -50,7 +50,6 @@ check_network() {
 backup_file() {
     local file_path="$1"
     local filename="$(basename "$file_path")"
-    # 获取相对于 FILE_DIR 的相对路径
     local relative_path="${file_path#$FILE_DIR/}"
     local backup_dir="$DATADIR/backup/$(dirname "$relative_path")"
     local backup_file="$DATADIR/backup/$relative_path"
@@ -152,23 +151,19 @@ update_mosdns_core() {
     
     log "INFO" "开始更新 mosdns 核心"
     
-    # 下载 mosdns zip 文件
     if ! download_with_retry "$mosdns_url" "$temp_zip"; then
         log "ERROR" "下载 mosdns 核心失败"
         return 1
     fi
     
-    # 创建解压目录
     mkdir -p "$temp_extract"
     
-    # 解压 zip 文件
     if ! unzip -o "$temp_zip" -d "$temp_extract" >/dev/null 2>&1; then
         log "ERROR" "解压 mosdns 核心失败"
         rm -rf "$temp_extract" "$temp_zip"
         return 1
     fi
     
-    # 查找解压后的 mosdns 可执行文件
     local mosdns_bin=$(find "$temp_extract" -name "mosdns" -type f -executable | head -n 1)
     if [ -z "$mosdns_bin" ]; then
         log "ERROR" "在 zip 文件中未找到 mosdns 可执行文件"
@@ -176,10 +171,8 @@ update_mosdns_core() {
         return 1
     fi
     
-    # 备份原有 mosdns
     backup_file "$FILE_DIR/mosdns"
     
-    # 复制新的 mosdns
     if cp -f "$mosdns_bin" "$FILE_DIR/mosdns" && chmod 755 "$FILE_DIR/mosdns"; then
         log "INFO" "mosdns 核心更新成功"
         rm -rf "$temp_extract" "$temp_zip"

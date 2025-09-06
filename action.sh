@@ -150,7 +150,6 @@ $AUTO_UPDATE_MSG"
 
 show_menu() {
     clear
-    # 每次显示菜单前重新读取配置，确保状态显示最新
     read_settings
     get_status_info
     draw_box "$STATUS_DISPLAY"
@@ -204,11 +203,9 @@ perform_update() {
 
 check_dependencies
 
-# 读取配置文件的函数
 read_settings() {
     SETTINGS_FILE="$DATADIR/setting.conf"
     if [ -f "$SETTINGS_FILE" ]; then
-        # 使用安全的方法读取配置
         grep -E '^[[:space:]]*[[:alpha:]_][[:alnum:]_]*=' "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp"
         . "${SETTINGS_FILE}.tmp"
         rm -f "${SETTINGS_FILE}.tmp"
@@ -220,7 +217,6 @@ read_settings() {
     CRONTAB_STATUS=$([ "$ENABLE_CRONTAB" = "true" ] && echo "启用" || echo "禁用")
 }
 
-# 初始读取配置
 read_settings
 
 echo "
@@ -262,7 +258,6 @@ while :; do
                     sleep 1
                     ;;
                 enable_iptables)
-                    # 启用 iptables
                     if [ -f "$SETTINGS_FILE" ]; then
                         if grep -q "ENABLE_IPTABLES" "$SETTINGS_FILE"; then
                             sed -i 's/^ENABLE_IPTABLES=.*/ENABLE_IPTABLES=true/' "$SETTINGS_FILE"
@@ -271,7 +266,6 @@ while :; do
                         fi
                         draw_box "✓ iptables DNS 转发已启用"
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单启用 iptables" >> "$LOG_FILE"
-                        # 立即更新状态显示
                         read_settings
                     else
                         draw_box "✗ 配置文件不存在"
@@ -279,7 +273,6 @@ while :; do
                     sleep 1
                     ;;
                 disable_iptables)
-                    # 禁用 iptables
                     if [ -f "$SETTINGS_FILE" ]; then
                         if grep -q "ENABLE_IPTABLES" "$SETTINGS_FILE"; then
                             sed -i 's/^ENABLE_IPTABLES=.*/ENABLE_IPTABLES=false/' "$SETTINGS_FILE"
@@ -288,7 +281,6 @@ while :; do
                         fi
                         draw_box "✗ iptables DNS 转发已禁用"
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单禁用 iptables" >> "$LOG_FILE"
-                        # 立即更新状态显示
                         read_settings
                     else
                         draw_box "✗ 配置文件不存在"
@@ -296,7 +288,6 @@ while :; do
                     sleep 1
                     ;;
                 enable_autoupdate)
-                    # 启用自动更新
                     if [ -f "$SETTINGS_FILE" ]; then
                         if grep -q "ENABLE_CRONTAB" "$SETTINGS_FILE"; then
                             sed -i 's/^ENABLE_CRONTAB=.*/ENABLE_CRONTAB=true/' "$SETTINGS_FILE"
@@ -305,7 +296,6 @@ while :; do
                         fi
                         draw_box "✓ 自动更新已启用"
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单启用自动更新" >> "$LOG_FILE"
-                        # 立即更新状态显示
                         read_settings
                     else
                         draw_box "✗ 配置文件不存在"
@@ -313,7 +303,6 @@ while :; do
                     sleep 1
                     ;;
                 disable_autoupdate)
-                    # 禁用自动更新
                     if [ -f "$SETTINGS_FILE" ]; then
                         if grep -q "ENABLE_CRONTAB" "$SETTINGS_FILE"; then
                             sed -i 's/^ENABLE_CRONTAB=.*/ENABLE_CRONTAB=false/' "$SETTINGS_FILE"
@@ -322,7 +311,6 @@ while :; do
                         fi
                         draw_box "✗ 自动更新已禁用"
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 通过菜单禁用自动更新" >> "$LOG_FILE"
-                        # 立即更新状态显示
                         read_settings
                     else
                         draw_box "✗ 配置文件不存在"

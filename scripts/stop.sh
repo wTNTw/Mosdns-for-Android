@@ -80,12 +80,12 @@ else
 fi
 
 if [ "$ENABLE_IPTABLES" = "true" ]; then
-    echo "[$(date '+%H:%M:%S')] iptables DNS转发已启用，将由service.sh统一处理禁用" >> "$LOG_FILE"
+    echo "[$(date '+%H:%M:%S')] iptables DNS转发已启用，正在禁用并恢复网络..." >> "$LOG_FILE"
+    sh "$DATADIR/scripts/iptables.sh" disable >> "$LOG_FILE" 2>&1
 else
     echo "[$(date '+%H:%M:%S')] iptables DNS转发已禁用（配置设置）" >> "$LOG_FILE"
 fi
 
-# iptables禁用和网络恢复已移至iptables.sh中统一处理
 echo "[$(date '+%H:%M:%S')] MosDNS服务停止完成" >> "$LOG_FILE"
 
 exit 0
